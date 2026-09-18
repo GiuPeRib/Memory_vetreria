@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory della Vetreria da Laboratorio (Nome vs Foto)</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+        /* 3D Card Flip Effects */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .matched-card {
+            opacity: 0.25;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between overflow-y-auto">
+
+    <!-- Intestazione grafica ripresa da laboratorio_di_chimica_memory_game_nome_vs_foto.html -->
+    <header class="bg-emerald-600 text-white shadow-lg py-4 px-6 mb-6">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md">
+                    <i class="fa-solid fa-vials text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Memory Chimico: Nome &harr; Foto</h1>
+                    <p class="text-emerald-100 text-xs sm:text-sm">Accoppia il nome dello strumento con la sua fotografia!</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="resetGame()" class="bg-white text-emerald-700 hover:bg-emerald-50 px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-rotate-right"></i> Riavvia
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 w-full flex-grow flex flex-col items-center pb-12">
+        <!-- Stats Bar -->
+        <div class="bg-white/80 backdrop-blur-md border border-slate-200 shadow-sm rounded-2xl p-4 w-full max-w-2xl flex justify-around items-center mb-6">
+            <div class="text-center">
+                <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Tentativi</span>
+                <span id="moves-count" class="text-xl sm:text-2xl font-extrabold text-emerald-600">0</span>
+            </div>
+            <div class="h-8 w-px bg-slate-200"></div>
+            <div class="text-center">
+                <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Tempo</span>
+                <span id="timer" class="text-xl sm:text-2xl font-extrabold text-emerald-600">00:00</span>
+            </div>
+            <div class="h-8 w-px bg-slate-200"></div>
+            <div class="text-center">
+                <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Coppie Trovate</span>
+                <span id="pairs-count" class="text-xl sm:text-2xl font-extrabold text-emerald-600">0 / 10</span>
+            </div>
+        </div>
+
+        <!-- Game Grid (20 cards total: 10 Names + 10 Photos) -->
+        <div id="game-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4 w-full max-w-5xl">
+            <!-- Dynamic cards injected here -->
+        </div>
+    </main>
+
+     <!-- Modale Vittoria -->
+    <div id="win-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center animate-in fade-in zoom-in duration-300">
+            <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl mx-auto flex items-center justify-center text-4xl mb-5 shadow-inner">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Bravissimo!</h2>
+            <p class="text-slate-600 text-sm mb-6">Hai abbinato correttamente tutti i nomi con le rispettive fotografie della vetreria!</p>
+            <div class="bg-slate-50 rounded-2xl p-4 mb-6 flex justify-around border border-slate-100">
+                <div>
+                    <span class="block text-xs font-semibold text-slate-400 uppercase">Tempo</span>
+                    <span id="final-time" class="text-lg font-bold text-slate-800">00:00</span>
+                </div>
+                <div class="w-px bg-slate-200"></div>
+                <div>
+                    <span class="block text-xs font-semibold text-slate-400 uppercase">Tentativi</span>
+                    <span id="final-moves" class="text-lg font-bold text-slate-800">0</span>
+                </div>
+            </div>
+            <button onclick="resetGame(); closeWinModal();" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-2xl font-bold transition shadow-md shadow-emerald-200 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> Gioca Ancora
+            </button>
+        </div>
+    </div>
+
+    <!-- Modale Zoom Immagine -->
+    <div id="image-zoom-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden cursor-pointer" onclick="closeImageZoom()">
+        <div class="relative bg-white rounded-3xl p-6 max-w-2xl w-full flex flex-col items-center shadow-2xl" onclick="event.stopPropagation()">
+            <button onclick="closeImageZoom()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <img id="zoomed-image" src="" alt="Zoom Vetreria" class="max-h-[70vh] max-w-full object-contain rounded-2xl mb-4">
+            <p class="text-xs text-slate-400 mt-1">Clicca ovunque fuori per chiudere</p>
+        </div>
+    </div>
+
+    <footer class="text-center py-6 text-xs text-slate-400">
+        <p>Laboratorio Chimico Memory &bull; Semplice, intuitivo e didattico</p>
+    </footer>
+
+    <script>
+        // Dati della vetreria con i file locali ereditati dal primo file
+        const glasswareData = [
+            { id: 1, name: "Provetta", image: "Test tube.png" },
+            { id: 2, name: "Pipetta", image: "Pipette.jpg" },
+            { id: 3, name: "Buretta", image: "Burette.jpg" },
+            { id: 4, name: "Beuta", image: "Erlenmeyer Flask.png" },
+            { id: 5, name: "Pallone", image: "Pallone.jpg" },
+            { id: 6, name: "Matraccio", image: "Matraccio.jpg" },
+            { id: 7, name: "Cilindro", image: "Cilindri.jpg" },
+            { id: 8, name: "Becher", image: "Becher.jpg" },
+            { id: 9, name: "Pipetta Pasteur", image: "Pipette Pasteur.jpg" },
+            { id: 10, name: "Ranvier", image: "Ranvier.jpg" }
+        ];
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let timerSeconds = 0;
+        let timerInterval = null;
+        let isGameStarted = false;
+        let isLockBoard = false;
+
+        function resetGame() {
+            clearInterval(timerInterval);
+            initGame();
+        }
+
+        function loadSavedImages() {
+            const saved = localStorage.getItem('glassware_photos_map');
+            if (saved) {
+                try {
+                    const customMap = JSON.parse(saved);
+                    glasswareData.forEach(item => {
+                        if (customMap[item.id] !== undefined) {
+                            item.image = customMap[item.id];
+                        }
+                    });
+                } catch(e) {
+                    console.error("Errore caricamento immagini", e);
+                }
+            }
+        }
+
+        window.onload = function() {
+            loadSavedImages();
+            initGame();
+        };
+
+        function initGame() {
+            cards = [];
+            flippedCards = [];
+            matchedPairs = 0;
+            moves = 0;
+            timerSeconds = 0;
+            isGameStarted = false;
+            isLockBoard = false;
+            
+            document.getElementById('moves-count').innerText = '0';
+            document.getElementById('pairs-count').innerText = `0 / ${glasswareData.length}`;
+            document.getElementById('timer').innerText = '00:00';
+            clearInterval(timerInterval);
+
+            glasswareData.forEach(item => {
+                cards.push({
+                    uniqueId: 'name-' + item.id,
+                    id: item.id,
+                    type: 'name',
+                    name: item.name,
+                    content: item.name,
+                    isMatched: false
+                });
+                cards.push({
+                    uniqueId: 'photo-' + item.id,
+                    id: item.id,
+                    type: 'photo',
+                    name: item.name,
+                    content: item.image,
+                    isMatched: false
+                });
+            });
+
+            cards.sort(() => Math.random() - 0.5);
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const grid = document.getElementById('game-grid');
+            grid.innerHTML = '';
+
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('perspective-1000', 'h-40', 'sm:h-48', 'cursor-pointer', 'w-full');
+                
+                if (card.isMatched) {
+                    cardElement.classList.add('matched-card');
+                }
+
+                cardElement.setAttribute('data-index', index);
+                cardElement.onclick = () => handleCardClick(index);
+
+                const inner = document.createElement('div');
+                inner.className = 'relative w-full h-full rounded-2xl transform-style-3d shadow-md transition-all duration-300';
+                if (card.isFlipped || card.isMatched) {
+                    inner.classList.add('rotate-y-180');
+                }
+                inner.id = `card-inner-${index}`;
+
+                const front = document.createElement('div');
+                front.className = 'absolute inset-0 w-full h-full bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl flex flex-col items-center justify-center text-white backface-hidden shadow-inner border border-emerald-500/40 p-2';
+                front.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-2 backdrop-blur-sm">
+                        <i class="fa-solid fa-flask-vial text-emerald-100 text-lg"></i>
+                    </div>
+                    <span class="text-xs font-semibold tracking-wide text-emerald-100 uppercase text-center">Memory Chimica</span>
+                `;
+
+                const back = document.createElement('div');
+                back.className = 'absolute inset-0 w-full h-full bg-white rounded-2xl rotate-y-180 backface-hidden border-2 border-slate-200 flex flex-col justify-between p-3 overflow-hidden shadow-sm';
+                
+                if (card.type === 'name') {
+                    back.innerHTML = `
+                        <div class="h-full w-full flex flex-col items-center justify-center p-2 text-center bg-emerald-50/40 rounded-xl">
+                            <span class="text-sm sm:text-base font-extrabold text-slate-800">${card.content}</span>
+                        </div>
+                    `;
+                } else {
+                    if (card.content && card.content.trim() !== '') {
+                        back.innerHTML = `
+                            <div class="h-full w-full flex flex-col items-center justify-center p-1.5">
+                                <img src="${card.content}" alt="${card.name}" class="max-h-[90%] max-w-[90%] object-contain rounded-xl cursor-zoom-in hover:scale-105 transition duration-200" onclick="event.stopPropagation(); openImageZoom('${card.content}')" onerror="this.onerror=null; this.src='https://placehold.co/150x150/dcfce7/059669?text=Foto+Non+Trovata';" title="Clicca per ingrandire">
+                            </div>
+                        `;
+                    } else {
+                        back.innerHTML = `
+                            <div class="h-full w-full flex flex-col items-center justify-center text-center p-1 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                                <i class="fa-solid fa-camera text-slate-400 text-xl mb-1"></i>
+                                <span class="text-xs font-bold text-slate-700">${card.name}</span>
+                                <span class="text-[9px] text-emerald-600 font-medium mt-1">Inserisci Foto</span>
+                            </div>
+                        `;
+                    }
+                }
+
+                inner.appendChild(front);
+                inner.appendChild(back);
+                cardElement.appendChild(inner);
+                grid.appendChild(cardElement);
+            });
+        }
+
+        function handleCardClick(index) {
+            if (isLockBoard) return;
+            const clickedCard = cards[index];
+
+            if (clickedCard.isMatched || clickedCard.isFlipped) return;
+
+            if (!isGameStarted) {
+                isGameStarted = true;
+                startTimer();
+            }
+
+            clickedCard.isFlipped = true;
+            flippedCards.push({ index, card: clickedCard });
+            updateCardUI(index, true);
+
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('moves-count').innerText = moves;
+                checkForMatch();
+            }
+        }
+
+        function updateCardUI(index, isFlipped) {
+            const inner = document.getElementById(`card-inner-${index}`);
+            if (isFlipped) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function checkForMatch() {
+            isLockBoard = true;
+            const [first, second] = flippedCards;
+
+            const isMatch = (first.card.id === second.card.id) && (first.card.type !== second.card.type);
+
+            if (isMatch) {
+                first.card.isMatched = true;
+                second.card.isMatched = true;
+                
+                document.querySelector(`[data-index="${first.index}"]`).classList.add('matched-card');
+                document.querySelector(`[data-index="${second.index}"]`).classList.add('matched-card');
+
+                matchedPairs++;
+                document.getElementById('pairs-count').innerText = `${matchedPairs} / ${glasswareData.length}`;
+                
+                resetTurn();
+
+                if (matchedPairs === glasswareData.length) {
+                    clearInterval(timerInterval);
+                    setTimeout(showWinModal, 500);
+                }
+            } else {
+                setTimeout(() => {
+                    first.card.isFlipped = false;
+                    second.card.isFlipped = false;
+                    updateCardUI(first.index, false);
+                    updateCardUI(second.index, false);
+                    resetTurn();
+                }, 1000);
+            }
+        }
+
+        function resetTurn() {
+            flippedCards = [];
+            isLockBoard = false;
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timerSeconds++;
+                const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+                const secs = (timerSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function openConfigModal() {
+            const container = document.getElementById('config-items-container');
+            container.innerHTML = '';
+
+            glasswareData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80';
+                div.innerHTML = `
+                    <div class="w-full sm:w-1/3">
+                        <span class="font-bold text-sm text-slate-800 block">${item.id}. ${item.name}</span>
+                    </div>
+                    <div class="w-full sm:w-2/3 flex items-center gap-2">
+                        <input type="text" id="photo-input-${item.id}" value="${item.image}" placeholder="Nome file o URL foto" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('config-modal').classList.remove('hidden');
+        }
+
+        function closeConfigModal() {
+            document.getElementById('config-modal').classList.add('hidden');
+        }
+
+        function saveCustomImages() {
+            const customMap = {};
+            glasswareData.forEach(item => {
+                const input = document.getElementById(`photo-input-${item.id}`);
+                if (input) {
+                    item.image = input.value.trim();
+                    customMap[item.id] = item.image;
+                }
+            });
+
+            localStorage.setItem('glassware_photos_map', JSON.stringify(customMap));
+            closeConfigModal();
+            initGame();
+        }
+
+        function showWinModal() {
+            document.getElementById('final-time').innerText = document.getElementById('timer').innerText;
+            document.getElementById('final-moves').innerText = moves;
+            document.getElementById('win-modal').classList.remove('hidden');
+        }
+
+        function closeWinModal() {
+            document.getElementById('win-modal').classList.add('hidden');
+        }
+
+        function openImageZoom(imgSrc) {
+            document.getElementById('zoomed-image').src = imgSrc;
+            document.getElementById('image-zoom-modal').classList.remove('hidden');
+        }
+
+        function closeImageZoom() {
+            document.getElementById('image-zoom-modal').classList.add('hidden');
+        }
+    </script>
+
+</body>
+</html>
